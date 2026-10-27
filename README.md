@@ -4,6 +4,7 @@
 
 [English](./README.en.md) · [架构](./docs/ARCHITECTURE.md) · [契约](./docs/CONTRACT.md) · [安装](./docs/INSTALL.md) · [验证](./docs/VERIFICATION.md)
 
+[![npm](https://img.shields.io/npm/v/dsh-task-settle-notify?color=CB3837)](https://www.npmjs.com/package/dsh-task-settle-notify)
 [![License](https://img.shields.io/github/license/chenvinc/dsh-task-settle-notify?color=4B6EF5)](./LICENSE)
 [![Tests](https://img.shields.io/badge/tests-45%20passing-brightgreen)](./test)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](./package.json)
@@ -64,6 +65,15 @@
 父卡结算时只多一行摘要：`含 4 个子任务：导出、导入、去重、文档`。
 
 ## 装上它
+
+包在 npm 上：`dsh-task-settle-notify`。两条命令装完：
+
+```bash
+dsh plugin --profile web add dsh-task-settle-notify
+# 再把 "dsh-task-settle-notify" 加进 ~/.dsh/profiles/web/package.json 的 dsh.profile.bundles
+```
+
+想跟着源码改，就 clone 下来用脚本装（上面两步它一次做完，外加备份和回执）：
 
 ```bash
 git clone https://github.com/chenvinc/dsh-task-settle-notify.git

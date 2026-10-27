@@ -2,7 +2,19 @@
 
 前提：Node ≥ 20、`dsh` 在 `PATH` 里、至少启动过一次目标 profile（默认 `web`，即 `~/.dsh/profiles/web/`）。
 
-## 安装
+## 从 npm 装（不 clone）
+
+包名 `dsh-task-settle-notify`，已发布在 npm registry。
+
+```bash
+dsh plugin --profile web add dsh-task-settle-notify
+```
+
+然后把 `"dsh-task-settle-notify"` 加进 `~/.dsh/profiles/web/package.json` 的 `dsh.profile.bundles` 数组（首次安装时该数组可能不存在，连同 `dsh.profile` 一起建）。`dsh plugin add` 只是把参数转发给 profile 目录里的 pnpm，**不会**自动改 bundle 列表。
+
+想回滚：`dsh plugin --profile web remove dsh-task-settle-notify`，并把它从 `dsh.profile.bundles` 里删掉。
+
+## 从源码装（带备份与回执）
 
 ```bash
 node scripts/install.mjs
@@ -23,7 +35,7 @@ node scripts/install.mjs --profile web --dsh-home ~/.dsh
    - `~/.dsh/profiles/web/cordis.patch.yml`
    - `~/.dsh/profiles/web/cordis.yml`
    - `~/.dsh/settings.yaml`、`~/.dsh/settings.json`（如果存在）
-2. 在 profile 目录执行 `dsh plugin --profile web add link:<repo>`（pnpm link 安装，不发布 npm）；
+2. 在 profile 目录执行 `dsh plugin --profile web add link:<repo>`（pnpm link 安装本地 checkout）；
 3. 把 `dsh-task-settle-notify` 追加到 profile `package.json` 的 `dsh.profile.bundles`；
 4. 写安装回执 `~/.dsh/dsh-task-settle-notify/install.json`；
 5. 打印备份路径与（必要时）重启命令。

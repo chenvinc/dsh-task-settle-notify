@@ -4,6 +4,7 @@
 
 [中文](./README.md) · [Architecture](./docs/ARCHITECTURE.md) · [Contract](./docs/CONTRACT.md) · [Install](./docs/INSTALL.md) · [Verification](./docs/VERIFICATION.md)
 
+[![npm](https://img.shields.io/npm/v/dsh-task-settle-notify?color=CB3837)](https://www.npmjs.com/package/dsh-task-settle-notify)
 [![License](https://img.shields.io/github/license/chenvinc/dsh-task-settle-notify?color=4B6EF5)](./LICENSE)
 [![Tests](https://img.shields.io/badge/tests-45%20passing-brightgreen)](./test)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](./package.json)
@@ -66,6 +67,15 @@ A settling parent card adds one line only: `含 4 个子任务：导出、导入
 The samples are verbatim output: message text is currently **Chinese only**, while the settings card is bilingual. See [Boundaries](#boundaries).
 
 ## Install
+
+It is on npm as `dsh-task-settle-notify`. Two commands:
+
+```bash
+dsh plugin --profile web add dsh-task-settle-notify
+# then add "dsh-task-settle-notify" to dsh.profile.bundles in ~/.dsh/profiles/web/package.json
+```
+
+To follow the source instead, clone it and use the script (it does both steps, plus a backup and a receipt):
 
 ```bash
 git clone https://github.com/chenvinc/dsh-task-settle-notify.git
