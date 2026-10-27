@@ -22,7 +22,7 @@ artifact at src-tauri/src/kp_document.rs
 ## Install
 
 ```bash
-git clone <this-repo> dsh-task-settle-notify
+git clone https://github.com/chenvinc/dsh-task-settle-notify.git
 cd dsh-task-settle-notify
 node scripts/install.mjs
 ```
