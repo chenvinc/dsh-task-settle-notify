@@ -18,9 +18,13 @@ A real delivery: the card ran in its own execution session, and the notice lande
 ## How the job changes
 
 ```text
-before: dispatch cards → end my turn → you tell me "the card is done" → I go check the board
-after:  dispatch cards → end my turn → the card settles → the message is pushed into my session → I wake up and review
+before: ask the agent to dispatch cards from the chat → the card finishes → I go back and tell it "the card is done" → it checks the board
+        or: set a 20–30 minute scheduled wake-up so it comes back and looks
+
+after:  ask the agent to dispatch → end the turn → the card settles on its own → the plugin pushes that settlement into the host session like a message → the agent wakes up and reviews
 ```
+
+Not everyone uses the board the same way. Some people write cards by hand, and a hand-written card has no session that started it — there is nowhere for a settlement message to go. This section is about the line that does have an origin: cards dispatched from a chat. That is exactly the return path this plugin adds.
 
 Dispatch seven cards and walk away. Nothing to refresh: whichever finishes first knocks on its own. For running a build site from the office, this is the missing return line — not another reminder light, but **the card's result arriving where the work is actually discussed**.
 
@@ -114,6 +118,7 @@ Full record — ids, timestamps, log excerpts, reproduction steps — in [docs/V
 | --- | --- |
 | Same Host and profile only | A deleted or remote session fails into `error.log` |
 | Scheduled runs are not notified | A cron run has no initiating session to answer |
+| Hand-written or otherwise unsolicited cards are not notified | There is no initiating session, so there is nowhere to deliver |
 | Delivered ≠ read | The host queues the message; a permanently busy session keeps it queued |
 | No replay | Only settlements that happen while the plugin is running are reported |
 | Message text is Chinese only | The settings card is bilingual; the message copy is not localised yet |
