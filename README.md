@@ -68,6 +68,22 @@
 
 父卡结算时只多一行摘要：`含 4 个子任务：导出、导入、去重、文档`。
 
+## 依赖
+
+市场里做任务看板的插件不少，多数管的是派卡与执行这一段：卡怎么建、怎么排队、怎么跑、界面怎么摆。这一只不碰这些——它不派卡、不执行、不写账本，只订阅「卡结算了」一个事件，把结果送回发起它的那个会话。所以它要的是一张**已经能派卡、能跑卡**的看板。
+
+| 依赖 | 要求 | 缺了会怎样 |
+| --- | --- | --- |
+| DSH 宿主 | ≥ `0.2.1-rc.2` | 老宿主不认 `dsh.bundle`，插件不会加载 |
+| 任务看板 | `@linxin666/dsh-client-ui-task-board` ≥ `0.4.8`，提供 provider extension v1 | 没有 `taskBoard` 服务时插件静默待命：`status` 里 `extensionActive: false`，不报错，也不影响看板 |
+| 会话网关 | 宿主自带的 `typertGateway` | 消息投不进发起会话，`error.log` 记一条，最多重试一次 |
+| Node | ≥ 20 | 装不上，也跑不起来 |
+| `@deepseek-ai/cordis` | `~4.0.5`（peer 依赖） | 由宿主提供，不随本插件安装 |
+
+看板是硬依赖，但它**不在**本插件的 `dependencies` 里：插件不从看板 import 任何东西、不读 `~/.dsh/task-board/ledger-v2.json`、不改看板包。只要某个看板实现提供同名的 `taskBoard` 服务、并实现同一版 `registerExtension` / `onExecutionSettled` 契约，就能接上——换实现不用改本插件。
+
+它只注册一个扩展订阅、只读事件，所以能和别的看板类插件一起装。上面这些凑齐，再往下看安装。
+
 ## 装上它
 
 包在 npm 上：`dsh-task-settle-notify`。两条命令装完：
@@ -125,7 +141,7 @@ curl -s http://127.0.0.1:3080/api/task-settle-notify/status
 
 ## 兼容
 
-DSH ≥ `0.2.1-rc.2`；任务看板支持 provider extension v1（`@linxin666/dsh-client-ui-task-board` ≥ 0.4.8）；Node ≥ 20；本机只在 macOS 上实测，纯 Node、无原生依赖。
+已实测：DSH `0.2.1-rc.2` + 看板 `0.4.8` + Node `24.19.0`，macOS。纯 Node，无原生依赖；其它平台没测过，理论上能跑。上面「依赖」一节列的是要求，这里是实际验证过的组合。
 
 ## 开发
 

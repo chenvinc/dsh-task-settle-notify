@@ -1,6 +1,6 @@
 # INSTALL — 一条命令装，一条命令卸
 
-前提：Node ≥ 20、`dsh` 在 `PATH` 里、至少启动过一次目标 profile（默认 `web`，即 `~/.dsh/profiles/web/`）。
+前提：Node ≥ 20、`dsh` 在 `PATH` 里、至少启动过一次目标 profile（默认 `web`，即 `~/.dsh/profiles/web/`），以及装了支持 provider extension v1 的任务看板（`@linxin666/dsh-client-ui-task-board` ≥ `0.4.8`）——没有看板时本插件加载但静默待命，`status` 里 `extensionActive: false`。完整的依赖表见 [README 的「依赖」一节](../README.md#依赖)。
 
 ## 从 npm 装（不 clone）
 

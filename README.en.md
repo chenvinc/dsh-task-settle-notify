@@ -70,6 +70,22 @@ A settling parent card adds one line only: `含 4 个子任务：导出、导入
 
 The samples are verbatim output: message text is currently **Chinese only**, while the settings card is bilingual. See [Boundaries](#boundaries).
 
+## Requirements
+
+The market has plenty of task-board plugins, and most of them cover the dispatch side: how cards are created, queued and run, and how the board looks. This one does none of that — it does not dispatch, execute, or write the ledger. It subscribes to a single event, "a card settled", and carries the result back to the session that asked for the card. So it needs a board that can already create and run cards.
+
+| Requirement | Version | Without it |
+| --- | --- | --- |
+| DSH host | ≥ `0.2.1-rc.2` | Older hosts do not read `dsh.bundle`, so the plugin is never loaded |
+| Task board | `@linxin666/dsh-client-ui-task-board` ≥ `0.4.8`, provider extension v1 | No `taskBoard` service means the plugin idles: `extensionActive: false` in `status`, no errors, no effect on the board |
+| Session gateway | the host's own `typertGateway` | Delivery fails into `error.log` and is retried at most once |
+| Node | ≥ 20 | It will not install or run |
+| `@deepseek-ai/cordis` | `~4.0.5` (peer) | Supplied by the host, never bundled |
+
+The board is a hard requirement, but it is **not** in this package's `dependencies`: the plugin imports nothing from the board, never reads `~/.dsh/task-board/ledger-v2.json`, and never patches the board package. Any board implementation that exposes the same `taskBoard` service and the same `registerExtension` / `onExecutionSettled` contract will work — swapping boards needs no change here.
+
+It registers one extension subscription and only reads events, so it can be installed alongside other task-board plugins. Once the above is in place, continue to Install.
+
 ## Install
 
 It is on npm as `dsh-task-settle-notify`. Two commands:
@@ -127,7 +143,7 @@ The full list, including host-level edges such as subagent sessions being unable
 
 ## Compatibility
 
-DSH ≥ `0.2.1-rc.2`; a task board with provider extension v1 (`@linxin666/dsh-client-ui-task-board` ≥ 0.4.8); Node ≥ 20. Pure Node, no native dependencies — tested on macOS only.
+Tested with DSH `0.2.1-rc.2`, board `0.4.8` and Node `24.19.0` on macOS. Pure Node, no native dependencies; other platforms are untested but should work. What it needs is listed under [Requirements](#requirements).
 
 ## Development
 
