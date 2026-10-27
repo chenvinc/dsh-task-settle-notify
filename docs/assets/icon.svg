@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- The motif, fitted to a 448x410 box centred on a 512px canvas. -->
+  <g transform="translate(9.89 27.92) scale(0.96137)">
+    <!-- the conversation the result goes back to -->
+    <rect x="312" y="325" width="168" height="116" rx="32" fill="#FFFFFF" stroke="#4B6EF5" stroke-width="18"/>
+    <circle cx="352" cy="383" r="11" fill="#4B6EF5"/>
+    <circle cx="396" cy="383" r="11" fill="#4B6EF5"/>
+    <circle cx="440" cy="383" r="11" fill="#4B6EF5"/>
+    <!-- the settled task card -->
+    <rect x="32" y="33" width="272" height="208" rx="44" fill="#FFFFFF" stroke="#4B6EF5" stroke-width="18"/>
+    <path d="M116 141 L154 179 L236 95" fill="none" stroke="#22C55E" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- curved return arrow: card -> conversation -->
+    <path d="M304 229 A96 96 0 0 1 400 325" fill="none" stroke="#4B6EF5" stroke-width="24" stroke-linecap="round"/>
+    <path d="M400 337 L377 298 L423 298 Z" fill="#4B6EF5" stroke="#4B6EF5" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+</svg>
