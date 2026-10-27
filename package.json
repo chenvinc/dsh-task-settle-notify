@@ -1,0 +1,60 @@
+{
+  "name": "dsh-task-settle-notify",
+  "version": "0.1.0",
+  "description": "Notify the DSH session that started a task-board card when that card settles, with batching, failure priority and parent/child aggregation.",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "README.md",
+    "README.en.md",
+    "LICENSE",
+    "docs"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "task-board",
+    "notify",
+    "notification",
+    "task-board-notify"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test --test-force-exit test/*.test.mjs",
+    "install:plugin": "node scripts/install.mjs",
+    "uninstall:plugin": "node scripts/uninstall.mjs"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.1-rc.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5"
+  }
+}

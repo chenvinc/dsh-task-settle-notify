@@ -1,0 +1,6 @@
+# The task board's settlement event is the only subscription this plugin needs;
+# no DSH core or task-board code is patched by installing this bundle.
+- insert:
+    - id: task-settle-notify
+      name: dsh-task-settle-notify
+      config: {}

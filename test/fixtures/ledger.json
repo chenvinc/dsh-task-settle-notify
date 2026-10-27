@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 6,
+  "revision": 42,
+  "updatedAt": 1700000600000,
+  "tasks": [
+    {
+      "id": "task-root",
+      "title": "M2-B",
+      "description": "Ship the document extractor",
+      "prompt": "Implement the extractor",
+      "status": "done",
+      "parentId": null,
+      "createdAt": 1699999900000,
+      "updatedAt": 1700000540000,
+      "executions": [
+        {
+          "id": "exec-root",
+          "sessionId": "session-runner-root",
+          "startedAt": 1700000000000,
+          "endedAt": 1700000540000,
+          "result": "succeeded",
+          "runGroupId": "group-1",
+          "initiatedBy": "session-alpha",
+          "summary": {
+            "text": "产物在 src-tauri/src/kp_document.rs，已通过 cargo test"
+          }
+        }
+      ]
+    },
+    {
+      "id": "task-child",
+      "title": "M2-B · 子任务：解析器",
+      "description": "Parser half of M2-B",
+      "prompt": "Write the parser",
+      "status": "done",
+      "parentId": "task-root",
+      "createdAt": 1699999910000,
+      "updatedAt": 1700000500000,
+      "executions": [
+        {
+          "id": "exec-child",
+          "sessionId": "session-runner-child",
+          "startedAt": 1700000010000,
+          "endedAt": 1700000500000,
+          "result": "succeeded",
+          "runGroupId": "group-1",
+          "initiatedBy": "session-alpha",
+          "summary": { "text": "parser.rs done" }
+        }
+      ]
+    },
+    {
+      "id": "task-failed",
+      "title": "M2-C",
+      "description": "Flaky integration test",
+      "prompt": "Run the integration suite",
+      "status": "failed",
+      "parentId": null,
+      "createdAt": 1700000000000,
+      "updatedAt": 1700000090000,
+      "executions": [
+        {
+          "id": "exec-failed",
+          "sessionId": "session-runner-failed",
+          "startedAt": 1700000000000,
+          "endedAt": 1700000090000,
+          "result": "failed",
+          "runGroupId": "group-2",
+          "initiatedBy": "session-alpha",
+          "error": "integration test panicked at tests/kp.rs:88",
+          "summary": { "text": "cargo test failed" }
+        }
+      ]
+    },
+    {
+      "id": "task-running",
+      "title": "M2-D",
+      "description": "Still running",
+      "prompt": "Do something long",
+      "status": "running",
+      "parentId": null,
+      "createdAt": 1700000100000,
+      "updatedAt": 1700000100000,
+      "executions": [
+        {
+          "id": "exec-running",
+          "sessionId": "session-runner-running",
+          "startedAt": 1700000100000,
+          "result": "succeeded",
+          "initiatedBy": "session-alpha"
+        }
+      ]
+    },
+    {
+      "id": "task-external",
+      "title": "外部完成",
+      "description": "Recorded by an agent outside the Host",
+      "prompt": "External work",
+      "status": "done",
+      "parentId": null,
+      "createdAt": 1700000000000,
+      "updatedAt": 1700000200000,
+      "executions": [
+        {
+          "id": "exec-external",
+          "sessionId": "session-external",
+          "startedAt": 1700000000000,
+          "endedAt": 1700000200000,
+          "result": "succeeded",
+          "external": true,
+          "initiatedBy": "agent-outside-host",
+          "summary": { "text": "done elsewhere" }
+        }
+      ]
+    },
+    {
+      "id": "task-finished-parent",
+      "title": "已结算的父卡",
+      "description": "Parent already done",
+      "prompt": "Parent work",
+      "status": "done",
+      "parentId": null,
+      "createdAt": 1699999000000,
+      "updatedAt": 1700000150000,
+      "executions": [
+        {
+          "id": "exec-finished-parent",
+          "sessionId": "session-runner-parent",
+          "startedAt": 1699999000000,
+          "endedAt": 1700000150000,
+          "result": "succeeded",
+          "runGroupId": "group-3",
+          "initiatedBy": "session-alpha",
+          "summary": { "text": "parent done" }
+        }
+      ]
+    },
+    {
+      "id": "task-orphan-child",
+      "title": "孤儿卡的子任务",
+      "description": "Parent already settled",
+      "prompt": "Child work",
+      "status": "done",
+      "parentId": "task-finished-parent",
+      "createdAt": 1699999500000,
+      "updatedAt": 1700000300000,
+      "executions": [
+        {
+          "id": "exec-orphan-child",
+          "sessionId": "session-runner-orphan",
+          "startedAt": 1700000200000,
+          "endedAt": 1700000300000,
+          "result": "succeeded",
+          "runGroupId": "group-3",
+          "initiatedBy": "session-alpha",
+          "summary": { "text": "orphan child done" }
+        }
+      ]
+    }
+  ]
+}
