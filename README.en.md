@@ -45,7 +45,7 @@ agent:  dispatched… (this turn can end)
 〔board〕Q3 report export settled · succeeded · 8 min (session session-9f3c…)
 artifact at out/report.csv
 〔board〕Upgrade dependencies is asking you (1 question)
-1. [version pin] Which major version should we move to?
+1. [version pin] id=q-pin1 Which major version should we move to?
 ```
 
 Settlements and questions arrive in the initiating session like an ordinary user message, so the host session wakes up naturally: it answers what it can decide itself (`answer_card_question`) and only comes back to you for the rest. Everything you must know arrives; nothing you don't need does.
@@ -75,9 +75,10 @@ The message that arrived mid-run:
 
 ```text
 〔board〕Relay self-test: a card asks  is asking you (1 question)
-1. [relay self-test] This card is asking the session that dispatched it: A or B?
+1. [relay self-test] id=relay_selftest This card is asking the session that dispatched it: A or B?
    options: A ｜ B
-answer with answer_card_question: card_question_id="card-b29ccdfc-…", …
+answers=[{"id":"relay_selftest","selected":[]}]
+answer with answer_card_question: card_question_id="card-b29ccdfc-…", one answers item per question (copy each id verbatim).
 ```
 
 The message that arrived at the end:
@@ -140,10 +141,13 @@ The plugin claims that question and sends it into the session that dispatched th
 
 ```text
 〔看板〕季度报表导出 在推进中向你提问（共 1 问）
-1. [导出格式] 导出成 CSV 还是 XLSX？
+1. [导出格式] id=q-export-format 导出成 CSV 还是 XLSX？
    选项：CSV ｜ XLSX
-用 answer_card_question 回答：card_question_id="call-…"，answers 里每道题给一项。
+answers=[{"id":"q-export-format","selected":[]}]
+用 answer_card_question 回答：card_question_id="call-…"，answers 里每道题给一项（id 照抄题干里的 id）。
 ```
+
+The `id=` on each line is the upstream `questions[].id`, verbatim — never regenerated or clipped — and the `answers=` line at the end is the skeleton to fill in. `answer_card_question` matches by id, so a relay without ids cannot be answered at all. For the rare upstream shape with no id the message says `id 未知（upstream 未提供）` and tells the reader it cannot be answered by tool — the GUI panel has to answer it.
 
 That session answers when it can; when it cannot, it asks you and hands your answer back. The card carries on as if it had received a normal answer. If nobody answers before the deadline the card is told "unanswered — continue the conservative way and record the open point", so it is never stuck forever.
 
@@ -220,6 +224,7 @@ Full record — ids, timestamps, log excerpts, reproduction steps — in [docs/V
 | The relay takes the question over | A claimed question never reaches the board or GUI question panel; it only goes to the initiating session |
 | Message text is Chinese only | The settings card is bilingual; the message copy is not localised yet |
 | Free-text answers come from the model | The relay does not parse prose: the initiating session returns structure through `answer_card_question` |
+| A question without an upstream id is not claimed | No id is invented: the message says so, the card's own panel keeps waiting, and the initiator gets a notice |
 
 The full list, including host-level edges such as subagent sessions being unable to receive, is in [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 

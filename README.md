@@ -45,7 +45,7 @@ agent：派好了……（这一轮可以结束）
 〔看板〕导出季度报表 已结算 · 成功 · 用时 8 分（会话 session-9f3c…）
 产物在 out/report.csv
 〔看板〕升级依赖 在推进中向你提问（共 1 问）
-1. [锁版本] 升到哪个大版本？
+1. [锁版本] id=q-pin1 升到哪个大版本？
 ```
 
 结算和提问都像一条普通用户消息那样被推进发起会话，宿主会话自然醒来：自己能定的当场答（`answer_card_question`），定不了的才回头问你。你必须知道的，一条不少；你不需要知道的，一条不来。
@@ -75,9 +75,10 @@ agent：派好了……（这一轮可以结束）
 
 ```text
 〔看板〕中继自测：卡中途提问 在推进中向你提问（共 1 问）
-1. [中继自测] 这张卡正在向发起它的会话提问：选 A 还是 B？
+1. [中继自测] id=relay_selftest 这张卡正在向发起它的会话提问：选 A 还是 B？
    选项：A ｜ B
-用 answer_card_question 回答：card_question_id="card-b29ccdfc-…"，answers 里每道题给一项。
+answers=[{"id":"relay_selftest","selected":[]}]
+用 answer_card_question 回答：card_question_id="card-b29ccdfc-…"，answers 里每道题给一项（id 照抄题干里的 id）。
 ```
 
 收尾进会话的那条：
@@ -138,10 +139,13 @@ agent：派好了……（这一轮可以结束）
 
 ```text
 〔看板〕季度报表导出 在推进中向你提问（共 1 问）
-1. [导出格式] 导出成 CSV 还是 XLSX？
+1. [导出格式] id=q-export-format 导出成 CSV 还是 XLSX？
    选项：CSV ｜ XLSX
-用 answer_card_question 回答：card_question_id="call-…"，answers 里每道题给一项。
+answers=[{"id":"q-export-format","selected":[]}]
+用 answer_card_question 回答：card_question_id="call-…"，answers 里每道题给一项（id 照抄题干里的 id，selected 用选项文字，或 custom 自由文本）。
 ```
+
+题干里的 `id=` 是 upstream 原样的 `questions[].id`（不重新生成、不截断），末尾那行 `answers=` 就是可直接回填的骨架——`answer_card_question` 按 id 匹配，没有 id 的转述根本答不上。极少数 upstream 不给 id 的形态，转述会写 `id 未知（upstream 未提供）`，并提示「该形态无法用工具作答，需人工在 GUI 回答」。
 
 宿主会话看到消息，自己能定就自己答；定不了就问你，再把你的答案交回去。卡那边像收到了正常回答一样往下跑。时限内没人答，卡会收到一句「未回答，按最保守的方式继续，并在结果里写明待确认点」，不会永远挂在那里。
 
@@ -218,6 +222,7 @@ curl -s http://127.0.0.1:3080/api/task-settle-notify/status
 | 卡片提问中继会「接管」这道题 | 拦下来就不会再弹到看板/GUI 的提问面板，只走发起会话这一条路 |
 | 消息正文目前只有中文 | 设置卡已中英双语，消息文案还没做 i18n |
 | 自由文本回答要靠模型给 | 中继不解析自然语言，答案由宿主会话调用 `answer_card_question` 结构化交回 |
+| upstream 不给 id 的提问不接管 | 不编造 id：转述写「id 未知（upstream 未提供）」，卡片自己的提问面板继续等人，发起会话只收到一条说明 |
 
 完整清单（含「子代理会话不能收件」这类宿主边界）见 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)。
 

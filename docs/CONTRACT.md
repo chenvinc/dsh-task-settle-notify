@@ -1,6 +1,6 @@
-# CONTRACT — dsh-task-settle-notify 0.1.0
+# CONTRACT — dsh-task-settle-notify 0.2.1
 
-本文件定义插件对 DSH、对看板、对用户与对运维的**可观察契约**。实现可以变，这些行为不在 0.1.x 内变。
+本文件定义插件对 DSH、对看板、对用户与对运维的**可观察契约**。实现可以变，这些行为不在 0.2.x 内变。
 
 ## 1. 包与模块
 
@@ -78,6 +78,24 @@
 - `initiatedBy` 缺失、为空、或该执行是外部记录（`external: true`）→ 跳过并写 trace。
 - `onlySelfInitiated=true` 时只投递给 `selfSessionId`；`selfSessionId` 为空则不过滤（文档中说明这是“未配置”的语义）。
 
+### 3.5 卡片提问转述
+
+运行中的卡调用 `ask_user_question` 时，插件认领该请求并转述给发起会话：
+
+```text
+〔看板〕<标题> 在推进中向你提问（共 <N> 问）
+1. [<header>] id=<upstream id> <问题正文>
+   选项：<A> ｜ <B>
+answers=[{"id":"<upstream id>","selected":[]}]
+用 answer_card_question 回答：card_question_id="<callId>"，answers 里每道题给一项（id 照抄题干里的 id）。
+```
+
+- **每题必须逐字带上 upstream 的 `questions[].id`**：不重新生成、不截断、不改大小写、不做任何“美化”。`answer_card_question` 按 id 匹配答案，缺 id 的转述等于不可作答——这是 0.2.1 修掉的缺陷（旧文本只有题干与选项，发起会话填任何 id 都被拒）。
+- 消息末尾给出可直接复制的 `answers=` 骨架：顺序与题目一致，`id` 取自同一 upstream 值，`selected` 为空数组，供模型填 `selected`/`custom` 后直接回填。
+- 长度不足时**先省略问题正文行**；`answers=` 骨架与工具说明保留在末尾，永不被截断（`MAX_RELAY_CHARS = 3500`）。省略时追加一行「还有 N 道题因长度省略」，其 id 仍在骨架上。
+- **upstream 未提供 id 时不得编造**：该题在题干位置打印 `id 未知（upstream 未提供）`，并追加「该形态无法用工具作答，需人工在 GUI 回答」。这种请求**不被认领**——直接交给卡片自己的提问面板（不产生等待、不产生超时结算），同时向发起会话投递一条纯通知，说明为何不能用工具作答。
+- `trace.log` 的 `question-relayed` 记录 `questionIds`（数组，缺 id 的元素为 `null`）；未认领的请求记录 `question-relay-no-id`，含 `questionsWithoutId`。
+
 ## 4. 投递契约
 
 - API：`ctx.typertGateway.invoke({ namespace: "session", method: "prompt", args: { request }, peer, signal })`。
@@ -133,7 +151,7 @@
 - 目录：`~/.dsh/dsh-task-settle-notify/`（可用 `DSH_TASK_SETTLE_NOTIFY_DIR` 覆盖）。
 - `error.log`：JSON Lines，单文件上限 512 KiB，超限轮转为 `error.log.1`。
 - `trace.log`：JSON Lines，单文件上限 1 MiB，超限轮转为 `trace.log.1`；只记阶段与 id，不记消息全文。
-- 每行至少 `{ at, level, stage, ...detail }`；`stage` 取值包括 `module-loaded`、`apply-complete`、`routes-mounted`、`watcher-started`、`extension-active`、`settlement`、`delivered`、`stale-skipped`、`external-skipped`、`no-initiator-skipped`、`child-suppressed`、`duplicate-skipped`、`delivery-failed`。
+- 每行至少 `{ at, level, stage, ...detail }`；`stage` 取值包括 `module-loaded`、`apply-complete`、`routes-mounted`、`watcher-started`、`extension-active`、`settlement`、`delivered`、`stale-skipped`、`external-skipped`、`no-initiator-skipped`、`child-suppressed`、`duplicate-skipped`、`delivery-failed`，以及提问中继的 `question-relayed`、`question-relay-no-id`、`question-settled`、`question-timeout`、`question-aborted`、`question-deliver`。
 
 ## 7. 生命周期与线程模型
 
