@@ -6,7 +6,7 @@
 
 [![npm](https://img.shields.io/npm/v/dsh-task-settle-notify?color=CB3837)](https://www.npmjs.com/package/dsh-task-settle-notify)
 [![License](https://img.shields.io/github/license/chenvinc/dsh-task-settle-notify?color=4B6EF5)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-45%20passing-brightgreen)](./test)
+[![Tests](https://img.shields.io/badge/tests-60%20passing-brightgreen)](./test)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](./package.json)
 [![DSH](https://img.shields.io/badge/DSH-%E2%89%A50.2.1--rc.2-4B6EF5)](./package.json)
 [![Topic](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin)
@@ -84,6 +84,23 @@
 
 它只注册一个扩展订阅、只读事件，所以能和别的看板类插件一起装。上面这些凑齐，再往下看安装。
 
+## 卡片中途提问，也回到这个会话
+
+卡不是只在结算时才需要你。它跑到一半要选方案、要文件路径、要确认一个破坏性操作时，会调用 `ask_user_question`——而在看板上跑的卡，那张提问面板没人守着。
+
+这个插件把这张提问拦下来，原样送进发起它的会话：
+
+```text
+〔看板〕季度报表导出 在推进中向你提问（共 1 问）
+1. [导出格式] 导出成 CSV 还是 XLSX？
+   选项：CSV ｜ XLSX
+用 answer_card_question 回答：card_question_id="call-…"，answers 里每道题给一项。
+```
+
+宿主会话看到消息，自己能定就自己答；定不了就问你，再把你的答案交回去。卡那边像收到了正常回答一样往下跑。时限内没人答，卡会收到一句「未回答，按最保守的方式继续，并在结果里写明待确认点」，不会永远挂在那里。
+
+开关和时限都在设置卡里：**卡片提问中继**（默认开）、**提问等待时限**（默认 10 分钟，60–3600 秒）。
+
 ## 装上它
 
 包在 npm 上：`dsh-task-settle-notify`。两条命令装完：
@@ -110,7 +127,7 @@ curl -s http://127.0.0.1:3080/api/task-settle-notify/status
 
 `extensionActive: true` 就是接上了。卸载：`node scripts/uninstall.mjs`。
 
-设置卡在 **设置 → 任务结算通知**，四项：总开关、合批窗口（默认 30 秒）、只看自己发起的卡、父卡是否汇总子任务。也可以直接改 `~/.dsh/profiles/web/task-settle-notify/settings.json`。
+设置卡在 **设置 → 任务结算通知**，六项：总开关、合批窗口（默认 30 秒）、只看自己发起的卡、父卡是否汇总子任务、卡片提问中继（默认开）、提问等待时限（默认 10 分钟）。也可以直接改 `~/.dsh/profiles/web/task-settle-notify/settings.json`。
 
 ## 它是怎么知道的
 
@@ -120,7 +137,7 @@ curl -s http://127.0.0.1:3080/api/task-settle-notify/status
 
 ## 验证
 
-- 45 条单元测试，`node --test` 全绿，不依赖真实看板。
+- 60 条单元测试，`node --test` 全绿，不依赖真实看板。
 - 真机端到端：结算到投递间隔 **30.012 s**，正好是配置的 30 秒窗口。
 - 消息真的落地：发起会话的持久日志里有 `agent/inbox/spliced`（`seq: 1472`），`status` 计数 `delivered` 递增、`failed: 0`。
 
@@ -134,8 +151,10 @@ curl -s http://127.0.0.1:3080/api/task-settle-notify/status
 | 定时任务不通知 | cron 没有「发起会话」，本来就没人可回 |
 | 手动写、或不是会话发起的卡不通知 | 没有「发起会话」，消息无处可投 |
 | 投递成功 ≠ 人已读 | 宿主只保证消息进队列；会话一直忙就一直排队 |
-| 重启不补发 | 只报「活着时」发生的结算 |
+| 重启不补发 | 只报「活着时」发生的结算；提问中继同样只在插件活着时生效 |
+| 卡片提问中继会「接管」这道题 | 拦下来就不会再弹到看板/GUI 的提问面板，只走发起会话这一条路 |
 | 消息正文目前只有中文 | 设置卡已中英双语，消息文案还没做 i18n |
+| 自由文本回答要靠模型给 | 中继不解析自然语言，答案由宿主会话调用 `answer_card_question` 结构化交回 |
 
 完整清单（含「子代理会话不能收件」这类宿主边界）见 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)。
 

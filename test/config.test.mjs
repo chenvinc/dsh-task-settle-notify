@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { DEFAULT_CONFIG, MAX_BATCH_WINDOW_SECONDS, resolveConfig } from '../lib/config.js'
+import {
+  DEFAULT_CONFIG,
+  MAX_BATCH_WINDOW_SECONDS,
+  MAX_CARD_QUESTION_TIMEOUT_SECONDS,
+  MIN_CARD_QUESTION_TIMEOUT_SECONDS,
+  resolveConfig,
+} from '../lib/config.js'
 
 test('empty input yields the documented defaults', () => {
   assert.deepEqual(resolveConfig(undefined), {
@@ -10,10 +16,14 @@ test('empty input yields the documented defaults', () => {
     onlySelfInitiated: false,
     includeSubtasks: true,
     selfSessionId: '',
+    relayCardQuestions: true,
+    cardQuestionTimeoutSeconds: 600,
   })
   assert.deepEqual(resolveConfig(null), resolveConfig({}))
   assert.equal(DEFAULT_CONFIG.batchWindowSeconds, 30)
   assert.equal(MAX_BATCH_WINDOW_SECONDS, 600)
+  assert.equal(MIN_CARD_QUESTION_TIMEOUT_SECONDS, 60)
+  assert.equal(MAX_CARD_QUESTION_TIMEOUT_SECONDS, 3600)
 })
 
 test('booleans are accepted only when they are real booleans', () => {
@@ -39,6 +49,15 @@ test('the batching window is clamped to 5..600 seconds and rounded', () => {
   assert.equal(resolveConfig({ batchWindowSeconds: '45' }).batchWindowSeconds, 45)
   assert.equal(resolveConfig({ batchWindowSeconds: 'nope' }).batchWindowSeconds, 30)
   assert.equal(resolveConfig({ batchWindowSeconds: Infinity }).batchWindowSeconds, 30)
+})
+
+test('the question relay can be switched off and its wait is clamped to 60..3600', () => {
+  assert.equal(resolveConfig({ relayCardQuestions: false }).relayCardQuestions, false)
+  assert.equal(resolveConfig({ relayCardQuestions: 'false' }).relayCardQuestions, true)
+  assert.equal(resolveConfig({ cardQuestionTimeoutSeconds: 5 }).cardQuestionTimeoutSeconds, 60)
+  assert.equal(resolveConfig({ cardQuestionTimeoutSeconds: 99999 }).cardQuestionTimeoutSeconds, 3600)
+  assert.equal(resolveConfig({ cardQuestionTimeoutSeconds: 90.4 }).cardQuestionTimeoutSeconds, 90)
+  assert.equal(resolveConfig({ cardQuestionTimeoutSeconds: 'nope' }).cardQuestionTimeoutSeconds, 600)
 })
 
 test('selfSessionId is trimmed, flattened and capped', () => {

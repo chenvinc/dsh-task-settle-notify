@@ -38,13 +38,24 @@ test('only writable fields with usable types survive the patch filter', () => {
       batchWindowSeconds: 45,
       onlySelfInitiated: true,
       includeSubtasks: false,
+      relayCardQuestions: false,
+      cardQuestionTimeoutSeconds: 120,
       selfSessionId: 'attacker',
       unknown: 1,
     }),
-    { enabled: false, batchWindowSeconds: 45, onlySelfInitiated: true, includeSubtasks: false },
+    {
+      enabled: false,
+      batchWindowSeconds: 45,
+      onlySelfInitiated: true,
+      includeSubtasks: false,
+      relayCardQuestions: false,
+      cardQuestionTimeoutSeconds: 120,
+    },
   )
   assert.deepEqual(pickSettingsPatch({ batchWindowSeconds: 2 }), { batchWindowSeconds: 5 })
   assert.deepEqual(pickSettingsPatch({ batchWindowSeconds: 900 }), { batchWindowSeconds: 600 })
+  assert.deepEqual(pickSettingsPatch({ cardQuestionTimeoutSeconds: 5 }), { cardQuestionTimeoutSeconds: 60 })
+  assert.deepEqual(pickSettingsPatch({ cardQuestionTimeoutSeconds: 7200 }), { cardQuestionTimeoutSeconds: 3600 })
   assert.deepEqual(pickSettingsPatch({ enabled: 'yes' }), {})
   assert.deepEqual(pickSettingsPatch(null), {})
   assert.deepEqual(pickSettingsPatch([]), {})

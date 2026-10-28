@@ -14,6 +14,8 @@
 import { DEFAULT_CONFIG, resolveConfig } from './lib/config.js'
 import { API_PREFIX, createRoutes } from './lib/http.js'
 import { createLog } from './lib/log.js'
+import { mountAnswerTool } from './lib/answer-tool.js'
+import { CardQuestionRelay } from './lib/questions.js'
 import { mergeSettings, pickSettingsPatch, readSettingsFile, resolveSettingsPath, writeSettingsFile } from './lib/settings-store.js'
 import { TaskBoardWatcher } from './lib/watcher.js'
 
@@ -78,6 +80,8 @@ export function apply(ctx, config) {
 
   /** @type {TaskBoardWatcher | undefined} */
   let watcher
+  /** @type {CardQuestionRelay | undefined} */
+  let relay
   let disposed = false
 
   /** Effective settings, used by the watcher on every event. */
@@ -90,6 +94,8 @@ export function apply(ctx, config) {
     onlySelfInitiated: runtime.onlySelfInitiated,
     includeSubtasks: runtime.includeSubtasks,
     selfSessionId: runtime.selfSessionId,
+    relayCardQuestions: runtime.relayCardQuestions,
+    cardQuestionTimeoutSeconds: runtime.cardQuestionTimeoutSeconds,
   })
 
   /**
@@ -124,6 +130,7 @@ export function apply(ctx, config) {
       lastEventAt: live?.lastEventAt,
       lastDelivery: live?.lastDelivery,
       lastError: live?.lastError,
+      questions: relay?.readStatus() ?? { pending: 0, relayed: 0, answered: 0, timedOut: 0, failed: 0 },
       settings: live?.settings ?? publicSettings(),
       settingsPath,
       errorLogPath: log.errorLogPath,
@@ -190,10 +197,42 @@ export function apply(ctx, config) {
           watcher = undefined
         }
       }, 'task-settle-notify: board watcher')
+
+      // The question relay shares the board face and the gateway. It stays
+      // independent of the watcher: a card can ask even when the settlement
+      // extension is disabled for another reason.
+      scoped.effect(() => {
+        relay = new CardQuestionRelay({
+          ctx: scoped,
+          gateway,
+          getBoard: () => (scoped.taskBoard ?? scoped.get?.('taskBoard')),
+          getConfig,
+          log,
+        })
+        relay.start()
+        return () => {
+          relay?.dispose()
+          relay = undefined
+        }
+      }, 'task-settle-notify: card question relay')
     })
   } catch (error) {
     log.error('watcher-mount', error)
     hostLogger.warn?.(`task-settle-notify: cannot mount watcher: ${String(error)}`)
+  }
+
+  try {
+    ctx.inject(['tools'], (scoped) => {
+      const dispose = mountAnswerTool({
+        scoped,
+        getRelay: () => relay,
+        log,
+        profileDir,
+      })
+      scoped.effect(() => dispose, 'task-settle-notify: card question tool')
+    })
+  } catch (error) {
+    log.warn('answer-tool-mount', String(error))
   }
 
   try {
@@ -208,6 +247,8 @@ export function apply(ctx, config) {
     disposed = true
     watcher?.dispose()
     watcher = undefined
+    relay?.dispose()
+    relay = undefined
     log.trace('plugin-disposed')
   }, 'task-settle-notify: lifecycle')
 
@@ -216,6 +257,7 @@ export function apply(ctx, config) {
     batchWindowSeconds: runtime.batchWindowSeconds,
     onlySelfInitiated: runtime.onlySelfInitiated,
     includeSubtasks: runtime.includeSubtasks,
+    relayCardQuestions: runtime.relayCardQuestions,
     defaults: DEFAULT_CONFIG.enabled,
   })
 }

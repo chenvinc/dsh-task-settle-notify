@@ -156,7 +156,7 @@ board.settleAndNotify
 - 所有 timer `unref()`，不阻止宿主退出；
 - 插件卸载时释放 extension 订阅、批次、重试 timer 与 peer。
 
-## 4. 已知限制（v0.1，明确不硬造）
+## 4. 已知限制（明确不硬造）
 
 1. **只覆盖本 Host、本 profile 内的会话**。`initiatedBy` 是当前 Host 的 session id；跨 Host、远程会话、已被彻底删除的会话无法投递，失败会写 `error.log`。
 2. **定时/外部结算没有发起会话**。cron 触发的 run 在 `startExecution` 时没有 `initiatedBy`；`record-external-outcome` 的 `initiatedBy` 是“谁在外部完成”的标签，不一定是会话。两类都跳过并在 trace 记录原因。
@@ -170,6 +170,16 @@ board.settleAndNotify
    `session "<id>" is owned by subagent routing`。若 `initiatedBy` 指向子代理会话，
    插件只写 `error.log` 并计入 `failed`，不会改投给父会话（避免把内部子任务噪声
    送到用户面前）。普通会话、卡片自己的执行会话不受影响。
+
+### 4.1 卡片提问中继（v0.2）
+
+看板的扩展契约只有 `onStatusChanged` / `onExecutionSettled` / `onTaskDeleted` 三个事件，**它不知道"提问"这件事**。所以提问必须从会话层拿：
+
+- 提问是 `ask_user_question` 工具的一次调用，它经 `ctx.userQuestions.ask()` 走 `user-questions/request` 瀑布（`ctx.waterfall(scopeTarget(agent, agent), 'user-questions/request', {...request, agent}, noAnswerer)`）。未打 scope 标签的监听者是全局可接收的——浏览器侧 `dsh-client-ui-user-questions/lib/client.js:1932` 正是这么接的。
+- 本插件用 `ctx.on('user-questions/request', listener, { prepend: true })` 抢在卡片 UI 之前认领：`request.agent.id` 反查 `board.snapshot().tasks[].executions[]` 里 `sessionId` 相同、未结束、非 external 的那条执行，取它的 `initiatedBy`；找不到发起会话就 `next()` 让给下家，卡片行为完全不变。
+- 认领后必须**自己兜底**：legacy 模式的 `ask()` 没有超时，`dispose`/到期/abort/投递失败任一路径都要 resolve 一个 `unansweredBatch`，否则卡片永远卡住。
+- 代答走插件自己注册的 `answer_card_question` 工具：模型拿到中继消息里的 `card_question_id`，按 `answers: [{ id, selected, custom }]` 结构化回答；`validateAnswerBatch` 会拒绝不属于本次提问的 id、没提供的选项、单选多答、空答案。只有 `initiatedBy` 那个会话能答。
+- 工具注册有两条路：能 `import('@deepseek-ai/dsh-tools')` 就用 `defineTool` 编译；否则退化成同一形状的普通定义（`parameters` 直接是 JSON Schema）。插件用 `link:` 装在 profile 里时宿主包不一定可解析，第二条路是常态。
 
 ## 5. 为什么不用轮询
 

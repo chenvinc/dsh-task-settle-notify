@@ -6,7 +6,7 @@
 
 [![npm](https://img.shields.io/npm/v/dsh-task-settle-notify?color=CB3837)](https://www.npmjs.com/package/dsh-task-settle-notify)
 [![License](https://img.shields.io/github/license/chenvinc/dsh-task-settle-notify?color=4B6EF5)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-45%20passing-brightgreen)](./test)
+[![Tests](https://img.shields.io/badge/tests-60%20passing-brightgreen)](./test)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](./package.json)
 [![DSH](https://img.shields.io/badge/DSH-%E2%89%A50.2.1--rc.2-4B6EF5)](./package.json)
 [![Topic](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin)
@@ -69,6 +69,23 @@ Several successes inside the window:
 A settling parent card adds one line only: `含 4 个子任务：导出、导入、去重、文档`.
 
 The samples are verbatim output: message text is currently **Chinese only**, while the settings card is bilingual. See [Boundaries](#boundaries).
+
+## A card that stops to ask, asks here
+
+A card does not only need you when it settles. Halfway through it may need a decision, a file path, or confirmation of something destructive — it calls `ask_user_question`, and a card running on the board has nobody watching its question panel.
+
+The plugin claims that question and sends it into the session that dispatched the card:
+
+```text
+〔看板〕季度报表导出 在推进中向你提问（共 1 问）
+1. [导出格式] 导出成 CSV 还是 XLSX？
+   选项：CSV ｜ XLSX
+用 answer_card_question 回答：card_question_id="call-…"，answers 里每道题给一项。
+```
+
+That session answers when it can; when it cannot, it asks you and hands your answer back. The card carries on as if it had received a normal answer. If nobody answers before the deadline the card is told "unanswered — continue the conservative way and record the open point", so it is never stuck forever.
+
+Both knobs live in the settings card: **Relay card questions** (on by default) and **Question wait limit** (10 minutes by default, 60–3600s).
 
 ## Requirements
 
@@ -136,8 +153,10 @@ Full record — ids, timestamps, log excerpts, reproduction steps — in [docs/V
 | Scheduled runs are not notified | A cron run has no initiating session to answer |
 | Hand-written or otherwise unsolicited cards are not notified | There is no initiating session, so there is nowhere to deliver |
 | Delivered ≠ read | The host queues the message; a permanently busy session keeps it queued |
-| No replay | Only settlements that happen while the plugin is running are reported |
+| No replay | Only settlements that happen while the plugin is running are reported; the question relay has the same lifetime |
+| The relay takes the question over | A claimed question never reaches the board or GUI question panel; it only goes to the initiating session |
 | Message text is Chinese only | The settings card is bilingual; the message copy is not localised yet |
+| Free-text answers come from the model | The relay does not parse prose: the initiating session returns structure through `answer_card_question` |
 
 The full list, including host-level edges such as subagent sessions being unable to receive, is in [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
@@ -148,7 +167,7 @@ Tested with DSH `0.2.1-rc.2`, board `0.4.8` and Node `24.19.0` on macOS. Pure No
 ## Development
 
 ```bash
-npm test     # node --test, 45 tests
+npm test     # node --test, 60 tests
 ```
 
 ```

@@ -36,8 +36,8 @@ window.__ModuleLoader__.load({
 
     const zh = {
       title: '任务结算通知',
-      description: '任务看板的卡片结算后，自动通知发起它的会话；不用再盯着看板刷新。',
-      summary: '卡片结算后自动通知发起会话。',
+      description: '任务看板的卡片结算后，自动通知发起它的会话；卡片中途的提问也会送回那个会话。',
+      summary: '卡片结算后通知发起会话，卡片提问由宿主会话代答。',
       loading: '正在读取设置…',
       unavailable: 'Host 路由尚未就绪，请重启 DSH 后再试。',
       loadFailed: '读取设置失败',
@@ -52,6 +52,10 @@ window.__ModuleLoader__.load({
       onlySelfHint: '定时任务（cron）没有发起会话，不会被通知。',
       includeSubtasks: '父卡汇总子任务',
       includeSubtasksHint: '子任务不单独发消息，只在父卡结算时列一行摘要。',
+      relayQuestions: '卡片提问中继',
+      relayQuestionsHint: '卡片执行中要提问时，把问题送回发起它的会话，由那个会话来回答。',
+      questionTimeout: '提问等待时限',
+      questionTimeoutHint: '时限内没人回答，就告诉卡片「没答」，由卡片自己决定下一步。',
       sectionStatus: '运行状态',
       state: '监听状态',
       active: '监听中',
@@ -60,6 +64,9 @@ window.__ModuleLoader__.load({
       delivered: '已投递',
       failed: '投递失败',
       suppressed: '已聚合子任务',
+      questionRelayed: '提问已转发',
+      questionAnswered: '已代答',
+      questionTimedOut: '超时未答',
       lastDelivery: '最近投递',
       noDelivery: '还没有投递记录',
       lastError: '最近错误',
@@ -91,6 +98,10 @@ window.__ModuleLoader__.load({
       onlySelfHint: 'Scheduled (cron) runs have no initiating session and are never notified.',
       includeSubtasks: 'Summarize subtasks on the parent',
       includeSubtasksHint: 'Children are not sent separately; the parent message lists them.',
+      relayQuestions: 'Relay card questions',
+      relayQuestionsHint: 'When a running card needs an answer, send the question to the session that dispatched it.',
+      questionTimeout: 'Question wait limit',
+      questionTimeoutHint: 'If nobody answers in time, the card is told it went unanswered and decides what to do next.',
       sectionStatus: 'Status',
       state: 'Listener',
       active: 'Listening',
@@ -99,6 +110,9 @@ window.__ModuleLoader__.load({
       delivered: 'Delivered',
       failed: 'Failed',
       suppressed: 'Children folded',
+      questionRelayed: 'Questions relayed',
+      questionAnswered: 'Answered',
+      questionTimedOut: 'Timed out',
       lastDelivery: 'Last delivery',
       noDelivery: 'Nothing delivered yet',
       lastError: 'Last error',
@@ -123,12 +137,19 @@ window.__ModuleLoader__.load({
     }
 
     /** Fields this card edits. */
-    const FIELDS = ['enabled', 'batchWindowSeconds', 'onlySelfInitiated', 'includeSubtasks'];
+    const FIELDS = [
+      'enabled',
+      'batchWindowSeconds',
+      'onlySelfInitiated',
+      'includeSubtasks',
+      'relayCardQuestions',
+      'cardQuestionTimeoutSeconds',
+    ];
 
     /**
      * Accept only a well-shaped settings answer.
      * @param {unknown} raw
-     * @returns {null | { enabled: boolean, batchWindowSeconds: number, onlySelfInitiated: boolean, includeSubtasks: boolean }}
+     * @returns {null | { enabled: boolean, batchWindowSeconds: number, onlySelfInitiated: boolean, includeSubtasks: boolean, relayCardQuestions: boolean, cardQuestionTimeoutSeconds: number }}
      */
     function normalizeSettings(raw) {
       if (!raw || typeof raw !== 'object') return null;
@@ -141,11 +162,16 @@ window.__ModuleLoader__.load({
       ) {
         return null;
       }
+      const questionWait = Number(raw.cardQuestionTimeoutSeconds);
       return {
         enabled: raw.enabled,
         batchWindowSeconds: Math.min(600, Math.max(5, Math.round(seconds))),
         onlySelfInitiated: raw.onlySelfInitiated,
         includeSubtasks: raw.includeSubtasks,
+        relayCardQuestions: typeof raw.relayCardQuestions === 'boolean' ? raw.relayCardQuestions : false,
+        cardQuestionTimeoutSeconds: Number.isFinite(questionWait)
+          ? Math.min(3600, Math.max(60, Math.round(questionWait)))
+          : 600,
       };
     }
 
@@ -458,6 +484,7 @@ window.__ModuleLoader__.load({
       }
 
       const seconds = Number(draft.batchWindowSeconds);
+      const questionWait = Number(draft.cardQuestionTimeoutSeconds);
       return h(
         'div',
         { style: STYLE_ROOT },
@@ -521,6 +548,41 @@ window.__ModuleLoader__.load({
             onChange: (value) => change('includeSubtasks', value),
           }),
         }),
+        h(Row, {
+          label: t('relayQuestions'),
+          hint: t('relayQuestionsHint'),
+          control: h(Toggle, {
+            checked: draft.relayCardQuestions,
+            disabled: saving,
+            label: t('relayQuestions'),
+            onChange: (value) => change('relayCardQuestions', value),
+          }),
+        }),
+        h(Row, {
+          label: t('questionTimeout'),
+          hint: t('questionTimeoutHint'),
+          control: h(
+            'div',
+            { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+            h('input', {
+              type: 'number',
+              min: 60,
+              max: 3600,
+              step: 30,
+              value: Number.isFinite(questionWait) ? questionWait : 600,
+              disabled: saving || !draft.relayCardQuestions,
+              'aria-label': t('questionTimeout'),
+              style: STYLE_INPUT,
+              onChange: (event) => {
+                const next = Number(event.target.value);
+                if (Number.isFinite(next)) {
+                  change('cardQuestionTimeoutSeconds', Math.min(3600, Math.max(60, Math.round(next))));
+                }
+              },
+            }),
+            h('span', { style: STYLE_HINT }, t('seconds')),
+          ),
+        }),
         h('p', { style: STYLE_SECTION }, t('sectionStatus')),
         h(
           'div',
@@ -533,6 +595,15 @@ window.__ModuleLoader__.load({
               `${t('delivered')}：${status && Number.isFinite(status.delivered) ? status.delivered : 0} · ` +
               `${t('failed')}：${status && Number.isFinite(status.failed) ? status.failed : 0}`,
           ),
+          status && status.questions && Number.isFinite(status.questions.relayed)
+            ? h(
+                'span',
+                null,
+                `${t('questionRelayed')}：${status.questions.relayed} · ` +
+                  `${t('questionAnswered')}：${Number.isFinite(status.questions.answered) ? status.questions.answered : 0} · ` +
+                  `${t('questionTimedOut')}：${Number.isFinite(status.questions.timedOut) ? status.questions.timedOut : 0}`,
+              )
+            : null,
           h(
             'span',
             null,

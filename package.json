@@ -1,6 +1,6 @@
 {
   "name": "dsh-task-settle-notify",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Notify the DSH session that started a task-board card when that card settles, with batching, failure priority and parent/child aggregation.",
   "type": "module",
   "main": "./index.js",
