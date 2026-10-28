@@ -59,6 +59,41 @@ Settlements and questions arrive in the initiating session like an ordinary user
 
 Dispatch seven cards and walk away; what comes back is a handful of messages, not seven reports. How many cards run, where each one is, who is waiting — none of that surfaces unless it needs your call.
 
+## A standard run: four legs, all recorded
+
+Not a diagram. One real run on 2026-10-28 (card `846bb8a7`, execution session `session-2b0534b1…`, initiating session `session-7d8b8d2a…`):
+
+| Time | What happened |
+| --- | --- |
+| 17:25:22 | the host session dispatches the card; it starts |
+| 17:25:27 | the card asks mid-run "A or B" → the plugin claims it → **the question lands in the initiating session** |
+| 17:26:22 | the initiating session answers A through `answer_card_question`; the card receives `{"answers":[{"id":"relay_selftest","selected":["A"]}]}` |
+| 17:26:28 | the card wraps up with "收到：A", 1 min 6 s of work |
+| 17:26:58 | the settlement arrives in the initiating session (30 s batch window), `delivered: 1, failed: 0` |
+
+The message that arrived mid-run:
+
+```text
+〔board〕Relay self-test: a card asks  is asking you (1 question)
+1. [relay self-test] This card is asking the session that dispatched it: A or B?
+   options: A ｜ B
+answer with answer_card_question: card_question_id="card-b29ccdfc-…", …
+```
+
+The message that arrived at the end:
+
+```text
+〔board〕Relay self-test: a card asks settled · succeeded · 1 min (session session-7d8b8d2a…)
+next: open the board for this card
+```
+
+To check it yourself, look at three places: `question-relayed` in the plugin trace (with taskId, initiatorSessionId and the number of questions), the `relayed / answered / delivered` counters on `GET /api/task-settle-notify/status`, and `agent/inbox/spliced` in the initiating session's log.
+
+That run also surfaced two design points:
+
+- Both messages enter the session at a **turn boundary**, so they wait while the host is busy instead of interrupting — the question and the answer can be several turns apart.
+- Order is not guaranteed. If the mid-run hint arrives after the answer, answering its id again returns `{"ok": false, "error": "…"}`: the question is settled, and a duplicate answer never lands in a card that already finished.
+
 ## It proved itself
 
 On the first real acceptance run, the card waiting on the board was this plugin's own wrap-up card. When it settled, the thing that carried "I'm done" into the session was this plugin — reporting its own completion.
@@ -166,9 +201,10 @@ No polling, no file watching, and no turn is ever interrupted. For the exact con
 
 ## Verification
 
-- 45 unit tests, `node --test`, all green, no real board needed.
+- 60 unit tests, `node --test`, all green, no real board needed.
 - On a real host: settlement-to-delivery interval **30.012 s**, exactly the configured window.
 - The message really landed: `agent/inbox/spliced` (`seq: 1472`) in the initiating session's durable log, with `status` counting `delivered` up and `failed: 0`.
+- The whole relay chain (claimed → delivered → answered → received → settled) is the run above, "A standard run".
 
 Full record — ids, timestamps, log excerpts, reproduction steps — in [docs/VERIFICATION.md](./docs/VERIFICATION.md).
 
