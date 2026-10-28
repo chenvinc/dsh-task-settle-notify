@@ -15,22 +15,49 @@
 
 A real delivery: the card ran in its own execution session, and the notice landed in the session that started it (session id and local path redacted).
 
-## How the job changes
+## One person, seven sites
+
+Set the scene first. You are the person in charge of this layer: one host session (your office), one task board (the site), several cards running in parallel.
+
+### Without the plugin: dispatch the cards, become the dispatcher
 
 ```text
-before: ask the agent to dispatch cards from the chat → the card finishes → I go back and tell it "the card is done" → it checks the board
-        or: set a 20–30 minute scheduled wake-up so it comes back and looks
-
-after:  ask the agent to dispatch → end the turn → the card settles on its own → the plugin pushes that settlement into the host session like a message → the agent wakes up and reviews
+you:    turn these three into cards, I'm stepping out
+agent:  dispatched (board +3, running)
+—— this turn ends; the site keeps working ——
 ```
 
-Not everyone uses the board the same way. Some people write cards by hand, and a hand-written card has no session that started it — there is nowhere for a settlement message to go. This section is about the line that does have an origin: cards dispatched from a chat. That is exactly the return path this plugin adds.
+And that is where it ends. The site is running and the office is silent. There are only two ways to find out how it is going:
 
-Dispatch seven cards and walk away. Nothing to refresh: whichever finishes first knocks on its own. For running a build site from the office, this is the missing return line — not another reminder light, but **the card's result arriving where the work is actually discussed**.
+- come back later and ask "where are the cards?" so the agent checks the board and reports;
+- or set a 20–30 minute scheduled wake-up before you leave so it comes back and looks.
 
-- The message carries the title, outcome, duration and one next step you can act on; failures carry the reason too.
-- Delivery is queued: a busy session finishes what it is doing first — it is **never interrupted**.
-- Successes inside 30 seconds merge into one message; failures go out immediately; children never flood the session, the parent summarises them in a line.
+Both are manual polling with extra steps — annoying, but survivable. The real pain is **surprise**: halfway through, a card hits something it should not decide alone — CSV or XLSX, drop that old table or not, which directory. It calls `ask_user_question`. But a card running on the board has nobody watching its question panel, so the card sits there waiting.
+
+Now you open each card, read what it is asking, answer each one, and keep track of which is which. You only wanted to hand out work; you ended up with seven reports to babysit. The board delivers the parallelism, but nothing carries the results back.
+
+### With the plugin: the site stays down there, conclusions come up here
+
+```text
+you:    turn these three into cards, I'm stepping out
+agent:  dispatched… (this turn can end)
+—— cards run, settle, and ask their own questions ——
+〔board〕Q3 report export settled · succeeded · 8 min (session session-9f3c…)
+artifact at out/report.csv
+〔board〕Upgrade dependencies is asking you (1 question)
+1. [version pin] Which major version should we move to?
+```
+
+Settlements and questions arrive in the initiating session like an ordinary user message, so the host session wakes up naturally: it answers what it can decide itself (`answer_card_question`) and only comes back to you for the rest. Everything you must know arrives; nothing you don't need does.
+
+### The isolation is designed, not incidental
+
+- **Only the initiating session**: a card answers to the session that dispatched it — no broadcast, no global pop-up. You keep talking to exactly one window.
+- **Queued, never preemptive**: a busy session finishes what it is doing; the plugin never interrupts it.
+- **Batching and priority**: successes within 30 seconds merge into one message, failures go out at once; children do not flood, the parent summarises them in a line.
+- **Limits stated plainly**: hand-written cards have no initiating session and therefore no return address; those are not notified. This plugin adds the return path for cards dispatched from a chat.
+
+Dispatch seven cards and walk away; what comes back is a handful of messages, not seven reports. How many cards run, where each one is, who is waiting — none of that surfaces unless it needs your call.
 
 ## It proved itself
 
